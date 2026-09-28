@@ -1,0 +1,21 @@
+# Host-plane bundle for the Superpowers SDD preset.
+#
+# This row lives in the PROFILE rather than in the agent preset on purpose: the
+# settings namespace it registers has to exist whether or not a superpowers
+# session is currently running, otherwise the settings page could not be opened
+# to configure a preset that is not in use yet.
+#
+# It registers a namespace and publishes no service, so it needs no `isolate`
+# realm — `settings.register` hands back an owner scope from the host `settings`
+# service rather than publishing into the Cordis service map.
+- insert:
+    - id: superpowers-delegation-settings
+      name: dsh-superpowers
+
+    # The browser half of the same package. A `dsh.client` row is the roster
+    # entry the modules node half scans into window.__DSH_BOOT__ and serves at
+    # /plugins/<id>/client.js; the node half of the package is the row above.
+    # `client.js` is hand-written CommonJS-factory source, not build output —
+    # DSH serves it verbatim, so no client toolchain is required.
+    - id: superpowers-client
+      name: dsh-superpowers

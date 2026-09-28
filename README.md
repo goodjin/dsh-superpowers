@@ -1,0 +1,111 @@
+# dsh-superpowers
+
+Run [Superpowers](https://github.com/obra/superpowers) — spec-driven development — as a
+DeepSeek Harness agent preset, with **a different subagent model for every skill**,
+chosen from a Settings page.
+
+The problem it solves: Superpowers is a heavily skill-based methodology, but in a
+default harness every subagent runs on whatever model the parent is using. Running
+`systematic-debugging` on a big model and `writing-good-tests` on a cheap one is the
+obvious thing to want, and there is no first-class way to get it.
+
+## What you get
+
+| | |
+|---|---|
+| **A preset, not just a plugin** | Ships the 15 Superpowers skills and the persona that makes the agent actually follow the six-phase method |
+| **Per-skill model settings** | A Superpowers section in Settings: one dropdown per skill, plus a row for subagents that aren't bound to a skill |
+| **One dispatch tool** | `delegate_skill` — reads the table, starts the child on that model, names the child session after the skill |
+| **The model is visible** | A subagent's composer shows which model it is actually running on, read-only |
+| **It cannot break your install** | The host row is fault-tolerant by construction; DSH starts and stays usable even if this plugin fails entirely |
+
+## Install
+
+```sh
+dsh plugin --profile web add dsh-superpowers
+```
+
+Then install the preset and make it the default:
+
+```sh
+mkdir -p ~/.dsh/.agent-presets/superpowers
+cp -R "$(npm root -g)/dsh-superpowers/preset/." ~/.dsh/.agent-presets/superpowers/
+```
+
+In `~/.dsh/settings.yaml`:
+
+```yaml
+agent-presets:
+  default: superpowers
+```
+
+To add it without making it the default, pick **Superpowers** from the preset
+selector in the UI.
+
+## Configure
+
+Open **Settings → Superpowers**. Each row is one skill; the last row covers
+subagents dispatched without a skill. Choices are read on the next dispatch — no
+restart, no preset edit.
+
+Routes are stored under the `superpowers-delegation` namespace in
+`~/.dsh/settings.yaml`, so you can also edit them by hand:
+
+```yaml
+superpowers-delegation:
+  defaultProvider: minimax-cn
+  defaultModel: MiniMax-M3.1-Flash-Preview
+  skillModels:
+    verification-before-completion:
+      provider: xiaomi-token-plan-cn
+      model: mimo-v2.6-pro
+```
+
+Resolution order per skill: the skill's own pin, then the default pair, then
+nothing — in which case the child inherits the parent's route.
+
+## Verifying an install
+
+```sh
+node "$(npm root -g)/dsh-superpowers/scripts/check.mjs" 3080 <token>
+```
+
+The token is in the URL you opened DSH with; it changes on every restart. The
+check reports each host-side dependency this plugin has, individually. After a
+DSH upgrade, run it first — see below.
+
+## Upgrades and compatibility
+
+DSH has no per-plugin version pinning: the plugin is resolved from the profile at
+start. A DSH upgrade that moves an internal API produces **no error** — the server
+boots and this feature quietly stops working. That is the failure mode this plugin
+was built to survive rather than to prevent.
+
+- **The host row is wrapped so it cannot stop DSH from starting.** Verified by
+  fault injection: with the row throwing, DSH boots and all 54 client entries
+  still mount. The plugin degrades to "no per-skill pins".
+- **The settings page shows a self-check line at the top of the Superpowers
+  section** — green when every dependency is where the plugin expects it, red with
+  a per-item explanation when not.
+- **Client-side failures are isolated per entry** by the host's plugin loader, so a
+  broken client half shows a banner and leaves the rest of the UI working.
+
+If the check reports a failure, the item name tells you which dependency moved.
+
+## Layout
+
+| Path | |
+|---|---|
+| `lib/index.js` | Host row: settings namespace, the browser channel, the self-check endpoint |
+| `lib/client.js` | Browser row: the Settings section, the composer model label |
+| `lib/skill-delegation.js` | The `delegate_skill` tool |
+| `lib/settings-schema.js` | The stored settings shape and route resolution |
+| `cordis.patch.yml` | The two composition rows this plugin adds |
+| `preset/` | The agent preset and the 15 Superpowers skills |
+| `scripts/check.mjs` | Post-upgrade compatibility check |
+
+## License
+
+MIT — see [LICENSE](LICENSE). The bundled skills are from
+[obra/superpowers](https://github.com/obra/superpowers), also MIT; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

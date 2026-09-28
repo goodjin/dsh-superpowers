@@ -1,0 +1,56 @@
+{
+  "name": "dsh-superpowers",
+  "version": "0.1.0",
+  "description": "Run Superpowers (spec-driven development) as a DeepSeek Harness agent preset, with a different subagent model per skill, chosen from Settings.",
+  "license": "MIT",
+  "author": "goodjin",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "superpowers",
+    "sdd",
+    "spec-driven-development",
+    "agent-preset"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goodjin/dsh-superpowers.git"
+  },
+  "homepage": "https://github.com/goodjin/dsh-superpowers#readme",
+  "bugs": {
+    "url": "https://github.com/goodjin/dsh-superpowers/issues"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js",
+    "./delegate-skill": "./lib/skill-delegation.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "scripts",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.5-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}
