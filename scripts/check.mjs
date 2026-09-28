@@ -22,6 +22,8 @@
  * Exit code 0 when every check passes, 1 otherwise. Safe to put in a script.
  */
 
+import { readFile } from 'node:fs/promises'
+
 const DEFAULT_PORT = 3080
 
 /**
@@ -96,9 +98,21 @@ async function ask(port, endpoint) {
 async function bundle(port) {
   try {
     const base = await (await fetch(`http://127.0.0.1:${port}/`, { headers: { cookie: COOKIE ?? '' } })).text()
-    const match = base.match(/"id":"dsh-superpowers","url":"[^"]*rev=([a-z0-9-]+)"/)
-    if (match === null) return { present: false, detail: '名册里找不到 dsh-superpowers：客户端那一行没装上' }
-    const res = await fetch(`http://127.0.0.1:${port}/plugins/??dsh-superpowers/client.js&rev=${match[1]}`)
+    // Two different identifiers are in play and conflating them is how this
+    // check once cried "the client row is missing" while it was installed and
+    // serving: the ROSTER entry is keyed by package name, while the served path
+    // uses the client module's own id. The package name is read from the
+    // manifest beside this script, so a rename cannot desynchronise it again.
+    let pkg = 'dsh-superpowers'
+    try {
+      const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
+      if (typeof manifest.name === 'string') pkg = manifest.name
+    } catch {
+      // Fall back to the historical name rather than reporting a lie.
+    }
+    const match = base.match(new RegExp(`"id":"${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}","url":"([^"]*rev=[a-z0-9-]+)"`))
+    if (match === null) return { present: false, detail: `名册里找不到 ${pkg}：客户端那一行没装上` }
+    const res = await fetch(`http://127.0.0.1:${port}${match[1]}`)
     if (!res.ok) return { present: false, detail: `浏览器文件取不到（HTTP ${res.status}）` }
     const source = await res.text()
     const missing = ['settings.section', 'conversation.input.left', 'readProjectedModel', 'ensureStyles'].filter(

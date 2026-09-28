@@ -10,7 +10,7 @@
 # service rather than publishing into the Cordis service map.
 - insert:
     - id: superpowers-delegation-settings
-      name: dsh-superpowers
+      name: '@goodjin/dsh-superpowers'
 
     # The browser half of the same package. A `dsh.client` row is the roster
     # entry the modules node half scans into window.__DSH_BOOT__ and serves at
@@ -18,4 +18,4 @@
     # `client.js` is hand-written CommonJS-factory source, not build output —
     # DSH serves it verbatim, so no client toolchain is required.
     - id: superpowers-client
-      name: dsh-superpowers
+      name: '@goodjin/dsh-superpowers'
