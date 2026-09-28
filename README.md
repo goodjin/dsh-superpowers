@@ -21,15 +21,23 @@ obvious thing to want, and there is no first-class way to get it.
 
 ## Install
 
+From npm:
+
 ```sh
-dsh plugin --profile web add dsh-superpowers
+dsh plugin --profile web add @goodjin/dsh-superpowers
+```
+
+or straight from GitHub, which pins to the branch instead of a version:
+
+```sh
+dsh plugin --profile web add goodjin/dsh-superpowers
 ```
 
 Then install the preset and make it the default:
 
 ```sh
 mkdir -p ~/.dsh/.agent-presets/superpowers
-cp -R "$(npm root -g)/dsh-superpowers/preset/." ~/.dsh/.agent-presets/superpowers/
+cp -R "$(npm root -g)/@goodjin/dsh-superpowers/preset/." ~/.dsh/.agent-presets/superpowers/
 ```
 
 In `~/.dsh/settings.yaml`:
@@ -67,7 +75,7 @@ nothing — in which case the child inherits the parent's route.
 ## Verifying an install
 
 ```sh
-node "$(npm root -g)/dsh-superpowers/scripts/check.mjs" 3080 <token>
+node "$(npm root -g)/@goodjin/dsh-superpowers/scripts/check.mjs" 3080 <token>
 ```
 
 The token is in the URL you opened DSH with; it changes on every restart. The
