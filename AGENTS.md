@@ -12,7 +12,7 @@
 
 | 位置 | 是什么 | 改代码时要注意 |
 | --- | --- | --- |
-| `~/.dsh/.agent-presets/superpowers/` | agent 预设和 15 个技能 | 里面有一行用**绝对路径**指着本仓库的 `lib/skill-delegation.js`。本仓库一旦改名或挪位置，那行会静默失效 |
+| `~/.dsh/.agent-presets/superpowers/` | agent 预设和 15 个技能 | `tool-delegate-skill` 一行用**包引用**（`@goodjin/dsh-superpowers/delegate-skill`）指向 profile 里装好的包。**别改回开发仓库的绝对路径**：开发仓库不装 node_modules，`lib/skill-delegation.js` 顶层 import 的对等依赖解析不到，整棵预设树挂载回滚、web 端无退避反复重试（见下「预设挂载」） |
 | `~/.dsh/profiles/web/package.json` | profile 的 bundle 清单 | `dsh.profile.bundles` 里记的是**包名**，要和 `package.json` 的 `name` 完全一致 |
 | `~/.dsh/settings.yaml` | `superpowers-delegation` 命名空间 | 存的是路由，格式在 `lib/settings-schema.js` |
 
@@ -57,6 +57,18 @@ token 在你打开 DSH 的那个地址里，**每次重启都会换**。这个�
 没人能接住，整个服务起不来。校验器之类会随版本失效的构造**必须放在 `apply` 内部**。
 
 （这个坑踩过两次：一次是校验库接口变了，一次是我以为挪进去过其实没挪。）
+
+### 预设挂载（2026-09-29 实测）
+
+- **预设树挂载是整树事务：任何一行导入失败，建到一半的整棵树回滚。** 报错只出现在
+  会话创建/恢复的失败信息里，容易被当成偶发。
+- **web 客户端对挂载失败没有退避，会按固定频率反复 resume。** 一行坏掉的预设行
+  （当时是 `tool-delegate-skill` 指向开发仓库绝对路径、对等依赖解析不到）实测把 CPU
+  打到 100%+、每秒约 33 次整树挂载，浏览器端跟着每秒全量重拉接口直到
+  `ERR_INSUFFICIENT_RESOURCES`。**预设行写坏的代价是整机卡死，不是单个功能失效。**
+- 预设行引用插件自己的模块时，**用包引用（`@goodjin/dsh-superpowers/delegate-skill`，
+  `package.json` 的 exports 里有映射），不要用文件绝对路径**——路径指到哪，就按哪里的
+  node_modules 解析对等依赖。
 
 ### 浏览器侧
 

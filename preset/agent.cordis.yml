@@ -226,7 +226,7 @@
     # on sessions that carry the skill catalog. It registers a tool and reads a
     # namespace; it publishes no service, so no realm is needed beyond this one.
     - id: tool-delegate-skill
-      name: /Users/good/github/dsh-superpowers/lib/skill-delegation.js
+      name: '@goodjin/dsh-superpowers/delegate-skill'
 
     # `agentOptions` is the DEFAULT route for every child this tool spawns. A
     # delegation that names provider/model overrides it (that needs the
