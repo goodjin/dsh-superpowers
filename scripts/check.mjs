@@ -23,6 +23,10 @@
  */
 
 import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const DEFAULT_PORT = 3080
 
@@ -36,11 +40,12 @@ const DEFAULT_PORT = 3080
 const TOKEN = process.env.DSH_TOKEN ?? process.argv[3] ?? null
 if (TOKEN === null) {
   console.log(
-    '\n用法：node scripts/check.mjs <端口> <token>\n'
+    '\n用法：node scripts/check.mjs <端口> <token> [预设文件]\n'
       + 'token 在你打开 DSH 那个地址里：\n'
       + '  http://127.0.0.1:<端口>/?token=……\n'
       + '也可以用环境变量 DSH_TOKEN。\n'
-      + '每次重启 DSH 都会换一个新 token。\n',
+      + '每次重启 DSH 都会换一个新 token。\n'
+      + '预设文件默认是本机正在用的那份；传路径可以查别的副本。\n',
   )
   process.exit(2)
 }
@@ -143,6 +148,43 @@ async function bundle(port) {
   }
 }
 
+/**
+ * The one preset row that points back at this plugin: `tool-delegate-skill`.
+ * A preset mount is WHOLE-TREE — a row that fails to import rolls the whole
+ * mount back, and the web client retries without backoff (2026-09-29: ~33
+ * full-tree resumes/second, CPU pegged, browser request storm). So this row's
+ * importability is worth checking by ACTUALLY importing it the way the loader
+ * would: a package specifier resolves from the profile's node_modules, a
+ * path imports as-is (which is exactly why a dev-checkout path breaks —
+ * peers do not resolve there).
+ *
+ * `presetFile` overridable so this check can be pointed at the shipped
+ * template, or at a known-bad fixture to prove the check still bites.
+ */
+async function delegateImport(presetFile) {
+  try {
+    const text = await readFile(presetFile, 'utf8')
+    const row = text.match(/^-?\s*- id: tool-delegate-skill\s*\r?\n\s*name:\s*(.+?)\s*$/m)
+    if (row === null) {
+      return { ok: false, detail: `${presetFile} 里没有 tool-delegate-skill 行` }
+    }
+    const name = row[1].trim().replace(/^['"]|['"]$/g, '')
+    let target = name
+    if (!name.startsWith('.') && !name.startsWith('/') && !name.startsWith('file:')) {
+      const fromProfile = createRequire(join(homedir(), '.dsh', 'profiles', 'web', 'package.json'))
+      target = fromProfile.resolve(name)
+    }
+    await import(pathToFileURL(target).href)
+    return { ok: true, detail: `tool-delegate-skill（${name}）导入正常` }
+  } catch (error) {
+    return {
+      ok: false,
+      detail: `tool-delegate-skill 导入失败：${error instanceof Error ? error.message : String(error)}`
+        + '。预设挂载会整树回滚、web 端反复重试——这就是挂载风暴的源头。',
+    }
+  }
+}
+
 const port = Number(process.argv[2] ?? DEFAULT_PORT)
 try {
   await exchange(port)
@@ -177,6 +219,11 @@ if (diag.unreachable) {
 const b = await bundle(port)
 if (!b.present) ok = false
 rows.push(['client.bundle', b.present, b.detail])
+
+const presetFile = process.argv[4] ?? join(homedir(), '.dsh', '.agent-presets', 'superpowers', 'agent.cordis.yml')
+const d = await delegateImport(presetFile)
+if (!d.ok) ok = false
+rows.push(['delegate.import', d.ok, d.detail])
 
 const width = Math.max(...rows.map((r) => r[0].length))
 console.log(`\ndsh-superpowers 自检 — 127.0.0.1:${port}\n`)
