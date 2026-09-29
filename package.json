@@ -1,6 +1,6 @@
 {
   "name": "@goodjin/dsh-superpowers",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run Superpowers (spec-driven development) as a DeepSeek Harness agent preset, with a different subagent model per skill, chosen from Settings.",
   "license": "MIT",
   "author": "goodjin",
