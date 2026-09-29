@@ -39,7 +39,8 @@
     "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "test": "node scripts/test.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
