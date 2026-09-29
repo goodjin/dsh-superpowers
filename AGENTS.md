@@ -60,9 +60,15 @@ token 在你打开 DSH 的那个地址里，**每次重启都会换**。这个�
 
 ### 浏览器侧
 
-- `dsh.client` 行会被扫进 `window.__DSH_BOOT__`，然后从 `/plugins/<id>/client.js` 提供。
-  **这个 id 是客户端模块自己在代码里声明的，不是包名。** 名册条目的 id 才是包名。**两者不一样，别混。**
-- 实际取到的地址里含一个**字面的双问号**：`/plugins/??<模块 id>/client.js&rev=<rev>`。
+- `dsh.client` 行会被扫进 `window.__DSH_BOOT__`，然后从 `/plugins/??<id>/client.js&rev=<rev>` 提供。
+  **这个 id 是 loader 行的 `name`，也就是包名**——名册条目的 id 和下发地址用的是同一个值。
+  **浏览器模块自己在 `__ModuleLoader__.load({id})` 里写的 id 必须和它一致**（多个 `/client`
+  后缀会被剥掉再比），写成别的值浏览器会直接拒绝导入，页面整块报
+  `Failed to load plugins ... loaded without registering "<包名>"`，
+  而主机侧自检全绿——**这个坑 2026-09-29 踩过：包名改成 @goodjin 带作用域后，
+  `lib/client.js` 里的模块 id 忘了跟着改，设置页整个栏目消失。**
+  （2026-09-29 复核 dsh-client-modules 源码 + 实机验证。）
+- 实际取到的地址里含一个**字面的双问号**：`/plugins/??<id>/client.js&rev=<rev>`。
   按单问号的地址去试一定 404。
 - 客户端包是**手写的 CommonJS 工厂**，不用构建：`window.__ModuleLoader__.load({id, factory})`，
   React 走 `require('react')`。

@@ -98,11 +98,12 @@ async function ask(port, endpoint) {
 async function bundle(port) {
   try {
     const base = await (await fetch(`http://127.0.0.1:${port}/`, { headers: { cookie: COOKIE ?? '' } })).text()
-    // Two different identifiers are in play and conflating them is how this
-    // check once cried "the client row is missing" while it was installed and
-    // serving: the ROSTER entry is keyed by package name, while the served path
-    // uses the client module's own id. The package name is read from the
-    // manifest beside this script, so a rename cannot desynchronise it again.
+    // The ROSTER entry id, its served URL path, and the bundle's self-declared
+    // module id must all be the package name — the loader row's `name` keys the
+    // roster and builds the URL (verified against dsh-client-modules on
+    // 2026-09-29), and the loader refuses a bundle whose factory id differs.
+    // The package name is read from the manifest beside this script, so a
+    // rename cannot desynchronise this check again.
     let pkg = 'dsh-superpowers'
     try {
       const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
@@ -119,7 +120,24 @@ async function bundle(port) {
       (needle) => !source.includes(needle),
     )
     if (missing.length > 0) return { present: false, detail: `浏览器文件缺这些关键部分：${missing.join('、')}` }
-    return { present: true, detail: `浏览器文件已下发（${source.length} 字节）` }
+    // The loader materializes a row only when the bundle's factory registered
+    // under the ROSTER ENTRY ID — the loader row's `name`, which is the package
+    // name. A bundle whose self-declared `__ModuleLoader__.load({id})` differs
+    // makes the browser refuse the import ("loaded without registering ..."),
+    // and the page shows "Failed to load plugins" — while every host check
+    // above still passes. This comparison is the only honest signal here.
+    const declared = source.match(/__ModuleLoader__\.load\(\{\s*id:\s*['"]([^'"]+)['"]/)?.[1]
+    if (declared === undefined) {
+      return { present: false, detail: '浏览器文件里找不到 __ModuleLoader__.load({id}) 声明' }
+    }
+    const normalized = declared.endsWith('/client') ? declared.slice(0, -7) : declared
+    if (normalized !== pkg) {
+      return {
+        present: false,
+        detail: `浏览器文件自报模块 id「${declared}」，名册 id 是「${pkg}」，对不上——浏览器会拒绝加载`,
+      }
+    }
+    return { present: true, detail: `浏览器文件已下发（${source.length} 字节），模块 id 与名册一致` }
   } catch (error) {
     return { present: false, detail: `读不到页面：${error instanceof Error ? error.message : String(error)}` }
   }
