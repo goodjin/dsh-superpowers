@@ -21,23 +21,20 @@ obvious thing to want, and there is no first-class way to get it.
 
 ## Install
 
-From npm:
-
-```sh
-dsh plugin --profile web add @goodjin/dsh-superpowers
-```
-
-or straight from GitHub, which pins to the branch instead of a version:
+From GitHub (the package is not on npm — install straight from the repository):
 
 ```sh
 dsh plugin --profile web add goodjin/dsh-superpowers
 ```
 
+This resolves to the branch, not a version; reinstall the same command to
+upgrade.
+
 Then install the preset and make it the default:
 
 ```sh
 mkdir -p ~/.dsh/.agent-presets/superpowers
-cp -R "$(npm root -g)/@goodjin/dsh-superpowers/preset/." ~/.dsh/.agent-presets/superpowers/
+cp -R ~/.dsh/profiles/web/node_modules/@goodjin/dsh-superpowers/preset/. ~/.dsh/.agent-presets/superpowers/
 ```
 
 In `~/.dsh/settings.yaml`:
@@ -75,7 +72,7 @@ nothing — in which case the child inherits the parent's route.
 ## Verifying an install
 
 ```sh
-node "$(npm root -g)/@goodjin/dsh-superpowers/scripts/check.mjs" 3080 <token>
+node ~/.dsh/profiles/web/node_modules/@goodjin/dsh-superpowers/scripts/check.mjs 3080 <token>
 ```
 
 The token is in the URL you opened DSH with; it changes on every restart. The
@@ -111,6 +108,7 @@ If the check reports a failure, the item name tells you which dependency moved.
 | `cordis.patch.yml` | The two composition rows this plugin adds |
 | `preset/` | The agent preset and the 15 Superpowers skills |
 | `scripts/check.mjs` | Post-upgrade compatibility check |
+| `scripts/test.mjs` | Load-safety and degradation tests, run in the checkout and against the installed copy |
 
 ## License
 
