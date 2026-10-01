@@ -21,16 +21,19 @@ obvious thing to want, and there is no first-class way to get it.
 
 ## Install
 
+Two halves, two steps. The **plugin** is global — Settings section, model
+table, tool module, self-check. The **preset** is the selectable mode —
+skills, persona, tool rows. Installing the package does not create the mode;
+the preset has to be copied into place.
+
 From GitHub (the package is not on npm — install straight from the repository):
 
 ```sh
 dsh plugin --profile web add goodjin/dsh-superpowers
 ```
 
-This resolves to the branch, not a version; reinstall the same command to
-upgrade.
-
-Then install the preset and make it the default:
+Then copy the preset, which is what makes **Superpowers** appear in the
+preset selector:
 
 ```sh
 mkdir -p ~/.dsh/.agent-presets/superpowers
@@ -46,6 +49,14 @@ agent-presets:
 
 To add it without making it the default, pick **Superpowers** from the preset
 selector in the UI.
+
+### Upgrading
+
+Re-running the install command updates the **plugin half only**. The preset
+under `~/.dsh/.agent-presets/superpowers/` is a snapshot you copied — it does
+not follow package upgrades, so after reinstalling, re-run the `cp -R` line
+above to refresh it. Re-copying overwrites hand edits in that directory; if
+you customised the preset, keep your version under a different name.
 
 ## Configure
 

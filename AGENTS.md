@@ -25,6 +25,14 @@
 dsh plugin --profile web add goodjin/dsh-superpowers
 ```
 
+**重装只更新插件那半；预设清单是拷出去的副本，要单独再拷一次**（改过 `preset/` 之后尤其）：
+
+```sh
+cp -R ~/.dsh/profiles/web/node_modules/@goodjin/dsh-superpowers/preset/. ~/.dsh/.agent-presets/superpowers/
+```
+
+不拷的话，模式挂载的还是旧清单——设置页变了、技能和工具行没变，就是漏了这一步。
+
 ## 改完怎么验
 
 改了 `lib/` 里的东西先跑 `npm test`：同一组断言在两个环境各跑一遍——开发仓库（没有依赖，
