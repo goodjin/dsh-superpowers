@@ -12,7 +12,7 @@
 
 | 位置 | 是什么 | 改代码时要注意 |
 | --- | --- | --- |
-| `~/.dsh/.agent-presets/superpowers/` | agent 预设和 15 个技能 | `tool-delegate-skill` 一行用**包引用**（`@goodjin/dsh-superpowers/delegate-skill`）指向 profile 里装好的包。**别改回开发仓库的绝对路径**：开发仓库不装 node_modules，`lib/skill-delegation.js` 顶层 import 的对等依赖解析不到，整棵预设树挂载回滚、web 端无退避反复重试（见下「预设挂载」） |
+| 本仓库 `preset/` + `cordis.patch.yml` 的声明行 | agent 预设和 15 个技能 | 预设**不再是 `~/.dsh/.agent-presets/` 下的副本**（新版不读那目录）；`preset/agent.cordis.yml` 是 plugins 列表的权威来源，声明行从它生成。`tool-delegate-skill` 一行用**包引用**（`@goodjin/dsh-superpowers/delegate-skill`）指向 profile 里装好的包，**别改回开发仓库的绝对路径**（对等依赖解析不到，整树回滚） |
 | `~/.dsh/profiles/web/package.json` | profile 的 bundle 清单 | `dsh.profile.bundles` 里记的是**包名**，要和 `package.json` 的 `name` 完全一致 |
 | profile 的 `cordis.patch.yml` 里 loader 行的 `config` | 每个技能用哪个模型的路由 | **不再是 `settings.yaml`**：DSH 0.2.x 起配置存 profile patch，命名空间名 = loader 行 id（`superpowers-delegation-settings`）。schema 在 `lib/settings-schema.js` |
 
@@ -25,13 +25,18 @@
 dsh plugin --profile web add goodjin/dsh-superpowers
 ```
 
-**重装只更新插件那半；预设清单是拷出去的副本，要单独再拷一次**（改过 `preset/` 之后尤其）：
+**预设不再是「拷出去的副本」，别再往 `~/.dsh/.agent-presets/` 拷了。**
+DSH 0.2.x **不读那个目录**（2026-10-08 实测）：预设改由插件 `cordis.patch.yml` 里的
+**声明行**提供（`id: superpowers-preset` / `name: '@deepseek-ai/dsh-agent-preset'`，
+`config` 里带 id、显示名、描述、order 和完整 `plugins` 列表）。装包即得模式，
+不需要额外拷贝步骤。`preset/agent.cordis.yml` 仍是 plugins 列表的**权威来源**，
+改它之后要重新生成声明（见 `preset/` 与 `cordis.patch.yml` 的对应关系）。
 
-```sh
-cp -R ~/.dsh/profiles/web/node_modules/@goodjin/dsh-superpowers/preset/. ~/.dsh/.agent-presets/superpowers/
-```
-
-不拷的话，模式挂载的还是旧清单——设置页变了、技能和工具行没变，就是漏了这一步。
+**预设挂载是整树事务：一行解析不到，整棵预设树回滚、界面显示「加载失败」。**
+包名会随 DSH 版本变（2026-10-08：`@deepseek-ai/dsh-workflow-worker-thread` 已被移除，
+改成 `@deepseek-ai/dsh-workflow-ptc`）。改完 preset 后**逐行解析一遍**再装：
+内部包（`@deepseek-ai/*`）从 dsh 安装目录解析，插件包（`@goodjin/*`）从 profile 解析——
+两个基准都要查，用错基准会误报。
 
 ## 升版本必核对（一次都不能省）
 
@@ -48,8 +53,8 @@ cp -R ~/.dsh/profiles/web/node_modules/@goodjin/dsh-superpowers/preset/. ~/.dsh/
 3. **跑 `scripts/check.mjs`，并且逐条看结果。** 关键是 `route.exists`——
    路由没注册时主机照样起得来、插件行照样 active，只有戳那条路径才看得见。
 4. **浏览器侧请用户看一眼。** 主机侧自检看不见渲染；设置页栏目、模型下拉要人确认。
-5. **预设那一半单独拷一次。** 重装只更新插件副本，`~/.dsh/.agent-presets/superpowers/`
-   是拷出去的快照，不跟着升级走。
+5. **预设的声明行跟着包走，不用额外拷贝。** 但改过 `preset/agent.cordis.yml` 后
+   要重新生成 `cordis.patch.yml` 里的声明，别让两者漂移。
 6. **把这次实测的日期写进下面的接口现状。** 接口事实会过期，标了日期才好判断还准不准。
 
 ## 改完怎么验
@@ -65,7 +70,7 @@ token 在你打开 DSH 的那个地址里，**每次重启都会换**。这个�
 浏览器侧渲染的东西它看不到，**那部分得请用户看一眼**。
 
 自检里有一条 `delegate.import`：把预设里 `tool-delegate-skill` 那行**按加载器的方式真导入一遍**
-（默认查本机正在用的那份预设，第四参数可指定别的副本，比如 `preset/agent.cordis.yml`）。
+（默认查 profile 里装好的那份；第四参数可指定别的副本，比如开发仓库的 `preset/agent.cordis.yml`）。
 挂载风暴就是这一行引起的——这条检查不用开 inspector 就能发现。
 
 **改浏览器侧时，先起一个临时端口验，别直接动正在用的那个。**
