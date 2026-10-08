@@ -64,18 +64,25 @@ Open **Settings → Superpowers**. Each row is one skill; the last row covers
 subagents dispatched without a skill. Choices are read on the next dispatch — no
 restart, no preset edit.
 
-Routes are stored under the `superpowers-delegation` namespace in
-`~/.dsh/settings.yaml`, so you can also edit them by hand:
+Routes are stored in the profile patch's `superpowers-delegation-settings`
+loader row (DSH 0.2.x keeps plugin config there, not in `settings.yaml`), so you
+can also edit them by hand in `cordis.patch.yml`:
 
 ```yaml
-superpowers-delegation:
-  defaultProvider: minimax-cn
-  defaultModel: MiniMax-M3.1-Flash-Preview
-  skillModels:
-    verification-before-completion:
-      provider: xiaomi-token-plan-cn
-      model: mimo-v2.6-pro
+- id: superpowers-delegation-settings
+  name: "@goodjin/dsh-superpowers"
+  config:
+    defaultProvider: minimax-cn
+    defaultModel: MiniMax-M3.1-Flash-Preview
+    skillModels:
+      verification-before-completion:
+        provider: xiaomi-token-plan-cn
+        model: mimo-v2.6-pro
 ```
+
+Values set in `settings.yaml` before upgrading are migrated automatically on
+first boot — the migration only fills fields you have not already set, so it
+never overwrites a later hand-edit.
 
 Resolution order per skill: the skill's own pin, then the default pair, then
 nothing — in which case the child inherits the parent's route.
@@ -90,12 +97,22 @@ The token is in the URL you opened DSH with; it changes on every restart. The
 check reports each host-side dependency this plugin has, individually. After a
 DSH upgrade, run it first — see below.
 
+The key line is `route.exists`: it POSTs the browser channel directly. When the
+host half silently failed to register its route (the bug fixed in v0.2.1), the
+row stayed "active", nothing logged anything, and only this probe could see the
+404. Do not skip it.
+
 ## Upgrades and compatibility
 
 DSH has no per-plugin version pinning: the plugin is resolved from the profile at
 start. A DSH upgrade that moves an internal API produces **no error** — the server
 boots and this feature quietly stops working. That is the failure mode this plugin
 was built to survive rather than to prevent.
+
+**Supported DSH versions:** `>=0.1.5-rc.2 <0.3.0` (declared in `peerDependencies`
+as `@deepseek-ai/dsh-tools`). Outside that range the Desktop plugin panel marks
+the plugin incompatible and blocks activation — that gate is the only signal this
+plugin gets when DSH moves under it.
 
 - **The host row is wrapped so it cannot stop DSH from starting.** Verified by
   fault injection: with the row throwing, DSH boots and all 54 client entries

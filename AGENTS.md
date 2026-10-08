@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | `~/.dsh/.agent-presets/superpowers/` | agent 预设和 15 个技能 | `tool-delegate-skill` 一行用**包引用**（`@goodjin/dsh-superpowers/delegate-skill`）指向 profile 里装好的包。**别改回开发仓库的绝对路径**：开发仓库不装 node_modules，`lib/skill-delegation.js` 顶层 import 的对等依赖解析不到，整棵预设树挂载回滚、web 端无退避反复重试（见下「预设挂载」） |
 | `~/.dsh/profiles/web/package.json` | profile 的 bundle 清单 | `dsh.profile.bundles` 里记的是**包名**，要和 `package.json` 的 `name` 完全一致 |
-| `~/.dsh/settings.yaml` | `superpowers-delegation` 命名空间 | 存的是路由，格式在 `lib/settings-schema.js` |
+| profile 的 `cordis.patch.yml` 里 loader 行的 `config` | 每个技能用哪个模型的路由 | **不再是 `settings.yaml`**：DSH 0.2.x 起配置存 profile patch，命名空间名 = loader 行 id（`superpowers-delegation-settings`）。schema 在 `lib/settings-schema.js` |
 
 **改包名的代价实测过：会直接把 DSH 弄到起不来。** 报错只说「找不到这个 bundle」，
 不说是名字对不上，排查起来很费时间。**已经装过的包不要改名。**
@@ -32,6 +32,25 @@ cp -R ~/.dsh/profiles/web/node_modules/@goodjin/dsh-superpowers/preset/. ~/.dsh/
 ```
 
 不拷的话，模式挂载的还是旧清单——设置页变了、技能和工具行没变，就是漏了这一步。
+
+## 升版本必核对（一次都不能省）
+
+2026-10-08 的教训：只改 `version` 就算「升级完成」，结果声明和实际环境对不上、
+功能静默失效，用户看不出问题在哪。**升版本不是改一个数字，是一个清单。**
+
+每次升版本（或 DSH 那边升版本后回头来看），必须逐条过：
+
+1. **对等依赖范围是否还覆盖得住当前 DSH。** `@deepseek-ai/dsh-tools` 写的是范围，
+   DSH 从 0.1.5 升到 0.2.x 之后，原范围 `^0.1.5-rc.2` 就**不再覆盖 0.2.x**，
+   桌面版插件面板直接判定「不兼容」。范围要写成覆盖已知区间（如 `>=0.1.5-rc.2 <0.3.0`），
+   并用 `semver.satisfies(..., {includePrerelease:true})` 对着实际版本号实测一遍。
+2. **跑 `npm test`。** 两套环境都跑，不能只看「装得上」。
+3. **跑 `scripts/check.mjs`，并且逐条看结果。** 关键是 `route.exists`——
+   路由没注册时主机照样起得来、插件行照样 active，只有戳那条路径才看得见。
+4. **浏览器侧请用户看一眼。** 主机侧自检看不见渲染；设置页栏目、模型下拉要人确认。
+5. **预设那一半单独拷一次。** 重装只更新插件副本，`~/.dsh/.agent-presets/superpowers/`
+   是拷出去的快照，不跟着升级走。
+6. **把这次实测的日期写进下面的接口现状。** 接口事实会过期，标了日期才好判断还准不准。
 
 ## 改完怎么验
 
@@ -108,6 +127,20 @@ token 在你打开 DSH 的那个地址里，**每次重启都会换**。这个�
 
 - 主机侧用 `ctx.connection.registerFetchRoute(...)` 注册一条**精确路径**的通道
   （**不是** Remote/typert 那套——那套要构建期代码生成，手写包声明不了）。
+- **设置命名空间由 loader 行的 `Config` 自动投影，不是插件调 `settings.register()`。**
+  `settings.register()` 和 `settings.get()` **在 DSH 0.2.x 已被删除**（实测 2026-10-08，
+  dsh-settings 方法表只有 configure/prepareDocument/describe/update/replace/mutate/write/schema）。
+  正确做法：入口导出 `Config`（schemastery 的 `z`），设置页自动出现，命名空间名就是
+  **loader 行的 `id`**；读写走 `configEditor.entries()`（读）和 `settings.update(ns, patch)`（写）。
+  只有标了 `volatile()` 的字段可被设置页改，且 **volatile 字段不能嵌套在 volatile 字段里**。
+  volatile 值解析后是引用（`.get()` 读），**每个字段各是一个引用，要递归解包**——只解一层会
+  留下空对象，读起来像「没配置」，路由就静默丢了。
+- **`settings` 和 `connection` 必须在同一次 `ctx.inject([...])` 里拿，不能嵌套。**
+  在某个服务注入回调拿到的派生上下文上再 `ctx.inject(['connection'], ...)`，
+  这个内层回调**永远不会触发**（2026-10-08 在 DSH 0.2.0-rc.2 / cordis 4.0.4 实测）：
+  路由压根不注册，而插件行照常 active、不报错、不打日志。当时的表现是
+  `POST /api/superpowers` 返回 404，设置页的模型下拉是空的。
+  同一次注入里两样都拿：`ctx.inject(['settings','connection'], (ctx) => { ... })`。
 - 客户端 `ctx.connection.rpc.call(...)` **返回的是外层信封**，成功是 `{ok: true, value}`。
   **直接当数据用会拿到 `undefined`**，而且不报错。
 

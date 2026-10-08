@@ -66,6 +66,45 @@ async function exchange(port) {
   COOKIE = pair
 }
 
+
+/**
+ * Does the exact fetch route exist at all?
+ *
+ * This is a SEPARATE check from `连接` on purpose. The connection check asks
+ * for diagnostics and reports the envelope; if the route is absent the shared
+ * /api handler answers 404 with a plain-text body, which the diagnostics call
+ * reports as a JSON parse failure — the wrong diagnosis for the real problem
+ * (the plugin half silently never registered its channel).
+ *
+ * A missing route is exactly the failure this plugin is built to hide: nothing
+ * throws, the row stays "active", and the settings page simply cannot talk to
+ * the host. Probing the path directly is the only way to see it.
+ */
+async function routeProbe(port) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 8000)
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/superpowers`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: COOKIE ?? '' },
+      body: JSON.stringify({ type: 'client-request', rpcId: 'probe', method: 'superpowers', payload: { endpoint: 'diagnostics' } }),
+      signal: controller.signal,
+    })
+    const status = response.status
+    if (status === 404) {
+      return { present: false, detail: '路由没注册（HTTP 404）：主机侧那条精确通道没进路由表，设置页连不上主机' }
+    }
+    if (status !== 200) {
+      return { present: false, detail: `路由返回 HTTP ${status}，不是预期的 200 响应` }
+    }
+    return { present: true, detail: '路由已注册，返回 HTTP 200' }
+  } catch (error) {
+    return { present: false, detail: `探测失败：${error instanceof Error ? error.message : String(error)}` }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function ask(port, endpoint) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 8000)
@@ -118,7 +157,11 @@ async function bundle(port) {
     }
     const match = base.match(new RegExp(`"id":"${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}","url":"([^"]*rev=[a-z0-9-]+)"`))
     if (match === null) return { present: false, detail: `名册里找不到 ${pkg}：客户端那一行没装上` }
-    const res = await fetch(`http://127.0.0.1:${port}${match[1]}`)
+    // The roster URL is a site-relative path ("plugins/??..."), so it needs a
+    // leading slash before it can be joined to the origin. Without one this
+    // fetch was asking for ":PORTplugins/" and reporting a missing bundle.
+    const path = match[1].startsWith('/') ? match[1] : `/${match[1]}`
+    const res = await fetch(`http://127.0.0.1:${port}${path}`)
     if (!res.ok) return { present: false, detail: `浏览器文件取不到（HTTP ${res.status}）` }
     const source = await res.text()
     const missing = ['settings.section', 'conversation.input.left', 'readProjectedModel', 'ensureStyles'].filter(
@@ -215,6 +258,10 @@ if (diag.unreachable) {
     rows.push([check?.name ?? '?', check?.ok === true, check?.detail ?? ''])
   }
 }
+
+const rp = await routeProbe(port)
+if (!rp.present) ok = false
+rows.push(['route.exists', rp.present, rp.detail])
 
 const b = await bundle(port)
 if (!b.present) ok = false
