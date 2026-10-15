@@ -61,7 +61,16 @@ async function rejectsWith(promise, pattern, message) {
   assert(pattern.test(error.message), `${message} — 实际报错：${error.message}`)
 }
 
-/** A ctx that captures tool registrations and lets tests script the services. */
+/**
+ * A ctx that captures tool registrations and lets tests script the services.
+ *
+ * `get` answers for `configEditor` because that is where the delegate reads its
+ * pins from: the row is mounted by the PRESET and carries no config of its own,
+ * so it reads the profile's `superpowers-delegation-settings` row across through
+ * the editor (DSH 0.2.x removed `settings.get()`). A stub without `get` failed
+ * the two happy-path tests with `ctx.get is not a function` instead of testing
+ * the delegation it exists to test — verified 2026-10-15.
+ */
 function captureCtx({ settings = {}, startContinuable } = {}) {
   const registered = []
   return {
@@ -70,6 +79,12 @@ function captureCtx({ settings = {}, startContinuable } = {}) {
       effect(fn) {
         return fn()
       },
+      get: (service) =>
+        service === 'configEditor'
+          ? {
+            entries: () => [{ options: { id: namespace }, fiber: { config: settings } }],
+          }
+          : undefined,
       tools: {
         register(tool) {
           registered.push(tool)
@@ -103,12 +118,14 @@ console.log(`  运行模式：${depsPresent ? '依赖齐全（验正常路径）
 // ---------- the two contracts, both modes ----------
 
 let mod = null
+let namespace = 'superpowers-delegation-settings'
 
 await test('模块在任何环境下都能装载', async () => {
   mod = await import(pathToFileURL(target).href)
   assert(typeof mod.apply === 'function', '应导出 apply 函数')
   assert(mod.name === 'superpowers-delegate-skill', `name 应为 superpowers-delegate-skill，实际 ${mod.name}`)
   assert(Array.isArray(mod.DELEGABLE_SKILLS) && mod.DELEGABLE_SKILLS.length > 0, '应导出技能列表')
+  namespace = (await import(pathToFileURL(join(dirname(target), 'settings-schema.js')).href)).NAMESPACE
 })
 
 await test('apply 在一切损坏时也不向外抛错', () => {
