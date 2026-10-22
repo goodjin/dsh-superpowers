@@ -27,6 +27,7 @@
  */
 
 import { createRequire } from 'node:module'
+import { readdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -125,7 +126,50 @@ await test('模块在任何环境下都能装载', async () => {
   assert(typeof mod.apply === 'function', '应导出 apply 函数')
   assert(mod.name === 'superpowers-delegate-skill', `name 应为 superpowers-delegate-skill，实际 ${mod.name}`)
   assert(Array.isArray(mod.DELEGABLE_SKILLS) && mod.DELEGABLE_SKILLS.length > 0, '应导出技能列表')
+  const presetRoot = join(dirname(target), '..', 'preset', 'skills')
+  const presetSkills = readdirSync(presetRoot)
+    .filter((name) => {
+      try {
+        return statSync(join(presetRoot, name)).isDirectory()
+          && statSync(join(presetRoot, name, 'SKILL.md')).isFile()
+      } catch {
+        return false
+      }
+    })
+    .sort()
+  assert(
+    mod.DELEGABLE_SKILLS.length === presetSkills.length,
+    `DELEGABLE_SKILLS 应与 preset/skills 一致（${mod.DELEGABLE_SKILLS.length} vs ${presetSkills.length}）`,
+  )
+  for (const skill of presetSkills) {
+    assert(mod.DELEGABLE_SKILLS.includes(skill), `DELEGABLE_SKILLS 缺少 ${skill}`)
+  }
   namespace = (await import(pathToFileURL(join(dirname(target), 'settings-schema.js')).href)).NAMESPACE
+})
+
+await test('resolveRoute：复用主会话哨兵优先于默认路由', async () => {
+  const { resolveRoute } = await import(pathToFileURL(join(dirname(target), 'settings-schema.js')).href)
+  const { ROUTE_USE_PARENT_SESSION } = await import(pathToFileURL(join(dirname(target), 'delegable-skills.js')).href)
+  const sentinel = { provider: ROUTE_USE_PARENT_SESSION, model: ROUTE_USE_PARENT_SESSION }
+  const settings = {
+    defaultProvider: 'p0',
+    defaultModel: 'm0',
+    skillModels: {
+      brainstorming: sentinel,
+    },
+  }
+  assert(resolveRoute(settings, 'brainstorming') === null, '技能行哨兵应省略 agentOptions')
+  assert(
+    resolveRoute(settings, 'writing-skills')?.provider === 'p0',
+    '未单独指定的技能应走默认对',
+  )
+  const defaultOnly = {
+    defaultProvider: ROUTE_USE_PARENT_SESSION,
+    defaultModel: ROUTE_USE_PARENT_SESSION,
+    skillModels: {},
+  }
+  assert(resolveRoute(defaultOnly, null) === null, '其他子代理行哨兵应省略 agentOptions')
+  assert(resolveRoute(defaultOnly, 'brainstorming') === null, '跟随默认且默认是哨兵时也应继承主会话')
 })
 
 await test('apply 在一切损坏时也不向外抛错', () => {
@@ -220,6 +264,32 @@ if (depsPresent) {
     )
     const { allRoutes } = await import(pathToFileURL(join(dirname(target), 'records.js')).href)
     assert(allRoutes()['child-1']?.model === 'm1', '台账应记下子代理的实际路由')
+  })
+
+  await test('有默认路由时，复用主会话哨兵仍不传 agentOptions', async () => {
+    const { ROUTE_USE_PARENT_SESSION } = await import(pathToFileURL(join(dirname(target), 'delegable-skills.js')).href)
+    const calls = []
+    const settings = {
+      defaultProvider: 'p0',
+      defaultModel: 'm0',
+      skillModels: {
+        brainstorming: { provider: ROUTE_USE_PARENT_SESSION, model: ROUTE_USE_PARENT_SESSION },
+      },
+    }
+    const { registered, ctx } = captureCtx({
+      settings,
+      startContinuable: async (request) => {
+        calls.push(request)
+        return { childId: 'child-parent' }
+      },
+    })
+    mod.apply(ctx, {})
+    const result = await registered[0].execute(
+      { skill: 'brainstorming', task: '标签', brief: '简报' },
+      { agent: { id: 'parent' }, signal: new AbortController().signal },
+    )
+    assert(result.model === 'inherited', `model 应为 inherited，实际 ${result.model}`)
+    assert(calls[0].request.agentOptions === undefined, '哨兵时不应写入 agentOptions')
   })
 }
 

@@ -77,8 +77,13 @@ Values set in `settings.yaml` before upgrading are migrated automatically on
 first boot — the migration only fills fields you have not already set, so it
 never overwrites a later hand-edit.
 
-Resolution order per skill: the skill's own pin, then the default pair, then
-nothing — in which case the child inherits the parent's route.
+Resolution order per skill: the skill's own pin (including「复用主会话模型」,
+which is stored as a sentinel and omits `agentOptions` so the child uses the
+parent session's model), then the default pair from the「其他子代理」row (same
+sentinel supported), then nothing — which also inherits the parent's route.
+Settings「跟随默认」on a skill row clears that skill's pin so the default pair
+applies; it is not the same as「复用主会话模型」, which is honored even when a
+default pair is configured.
 
 ## Verifying an install
 
