@@ -12,7 +12,7 @@
 
 | 位置 | 是什么 | 改代码时要注意 |
 | --- | --- | --- |
-| 本仓库 `preset/` + `cordis.patch.yml` 的声明行 | agent 预设和 15 个技能 | 预设**不再是 `~/.dsh/.agent-presets/` 下的副本**（新版不读那目录）；`preset/agent.cordis.yml` 是 plugins 列表的权威来源，声明行从它生成。`tool-delegate-skill` 一行用**包引用**（`@goodjin/dsh-superpowers/delegate-skill`）指向 profile 里装好的包，**别改回开发仓库的绝对路径**（对等依赖解析不到，整树回滚） |
+| 本仓库 `preset/` + `cordis.patch.yml` 的声明行 | agent 预设和 15 个技能 | 预设**不再是 `~/.dsh/.agent-presets/` 下的副本**（新版不读那目录）；`preset/agent.cordis.yml` 是 plugins 列表的权威来源，声明行从它生成。`tool-delegate-skill` 一行用**包引用**（`@goodjin2/dsh-superpowers/delegate-skill`）指向 profile 里装好的包，**别改回开发仓库的绝对路径**（对等依赖解析不到，整树回滚） |
 | `~/.dsh/profiles/web/package.json` | profile 的 bundle 清单 | `dsh.profile.bundles` 里记的是**包名**，要和 `package.json` 的 `name` 完全一致 |
 | profile 的 `cordis.patch.yml` 里 loader 行的 `config` | 每个技能用哪个模型的路由 | **不再是 `settings.yaml`**：DSH 0.2.x 起配置存 profile patch，命名空间名 = loader 行 id（`superpowers-delegation-settings`）。schema 在 `lib/settings-schema.js` |
 
@@ -96,7 +96,7 @@ schemastery 版本更老时，插件构造 `Config` 会抛，被 `index.js` 的 
   **按 id 覆盖**已有行。
 - **`remove:` 不是合法写法**，会报 `Cannot read properties of undefined (reading 'startsWith')`。
 - 同一个 id 不能既 `insert:` 又重新声明，会报 `duplicate loader entry id`。
-- **带命名空间的包名要加引号**（`name: '@goodjin/dsh-superpowers'`）——`@` 在 YAML 开头是保留指示符，
+- **带命名空间的包名要加引号**（`name: '@goodjin2/dsh-superpowers'`）——`@` 在 YAML 开头是保留指示符，
   不加引号直接解析失败，**而且 DSH 会起不来**。
 - **一个入口行没有「失败不算数」的开关**。一行里能配的只有 id、name、config、group、disabled、inject。
   所以容错只能写在代码里（`apply` 包 try/catch）。
@@ -116,7 +116,7 @@ schemastery 版本更老时，插件构造 `Config` 会抛，被 `index.js` 的 
   （当时是 `tool-delegate-skill` 指向开发仓库绝对路径、对等依赖解析不到）实测把 CPU
   打到 100%+、每秒约 33 次整树挂载，浏览器端跟着每秒全量重拉接口直到
   `ERR_INSUFFICIENT_RESOURCES`。**预设行写坏的代价是整机卡死，不是单个功能失效。**
-- 预设行引用插件自己的模块时，**用包引用（`@goodjin/dsh-superpowers/delegate-skill`，
+- 预设行引用插件自己的模块时，**用包引用（`@goodjin2/dsh-superpowers/delegate-skill`，
   `package.json` 的 exports 里有映射），不要用文件绝对路径**——路径指到哪，就按哪里的
   node_modules 解析对等依赖。
 

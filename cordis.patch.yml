@@ -15,7 +15,7 @@
 # skill root.
 - insert:
     - id: superpowers-delegation-settings
-      name: '@goodjin/dsh-superpowers'
+      name: '@goodjin2/dsh-superpowers'
 
     # The browser half of the same package. A `dsh.client` row is the roster
     # entry the modules node half scans into window.__DSH_BOOT__ and serves at
@@ -23,7 +23,7 @@
     # `client.js` is hand-written CommonJS-factory source, not build output —
     # DSH serves it verbatim, so no client toolchain is required.
     - id: superpowers-client
-      name: '@goodjin/dsh-superpowers'
+      name: '@goodjin2/dsh-superpowers'
 
     # The preset itself as a declaration row.
     - id: superpowers-preset
@@ -133,7 +133,7 @@
             name: '@deepseek-ai/dsh-skill-filesystem'
             config:
               customSkillDirs:
-                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@goodjin/dsh-superpowers/package.json')), 'preset/skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@goodjin2/dsh-superpowers/package.json')), 'preset/skills')"
 
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
@@ -238,7 +238,7 @@
               # on sessions that carry the skill catalog. It registers a tool and reads a
               # namespace; it publishes no service, so no realm is needed beyond this one.
               - id: tool-delegate-skill
-                name: '@goodjin/dsh-superpowers/delegate-skill'
+                name: '@goodjin2/dsh-superpowers/delegate-skill'
 
               # `agentOptions` is the DEFAULT route for every child this tool spawns. A
               # delegation that names provider/model overrides it (that needs the

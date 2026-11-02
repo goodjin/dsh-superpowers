@@ -63,7 +63,7 @@ can also edit them by hand in `cordis.patch.yml`:
 
 ```yaml
 - id: superpowers-delegation-settings
-  name: "@goodjin/dsh-superpowers"
+  name: "@goodjin2/dsh-superpowers"
   config:
     defaultProvider: minimax-cn
     defaultModel: MiniMax-M3.1-Flash-Preview
@@ -88,7 +88,7 @@ default pair is configured.
 ## Verifying an install
 
 ```sh
-node ~/.dsh/profiles/web/node_modules/@goodjin/dsh-superpowers/scripts/check.mjs 3080 <token>
+node ~/.dsh/profiles/web/node_modules/@goodjin2/dsh-superpowers/scripts/check.mjs 3080 <token>
 ```
 
 The token is in the URL you opened DSH with; it changes on every restart. The
