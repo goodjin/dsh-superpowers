@@ -11,8 +11,9 @@
  *   1. every id+name row in preset/agent.cordis.yml must appear in the
  *      declaration's inlined plugin list, and
  *   2. every id+name row in the declaration that is NOT part of the preset
- *      must be one of the three host-plane rows declared here on purpose
- *      (delegation settings, browser half, the preset row itself).
+ *      must be one of the four host-plane rows declared here on purpose
+ *      (delegation settings, the delegation service, browser half, the
+ *      preset row itself).
  *
  * Commented-out lines are ignored on both sides. Exit 0 when in sync, 1 when
  * drifted, with the offending rows named.
@@ -29,6 +30,7 @@ const patchPath = join(root, 'cordis.patch.yml')
 /** Rows that live in the bundle declaration but are intentionally not preset plugins. */
 const HOST_PLANE_ROWS = new Set([
   'superpowers-delegation-settings',
+  'superpowers-delegation-service',
   'superpowers-client',
   'superpowers-preset',
 ])

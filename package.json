@@ -25,6 +25,7 @@
   "exports": {
     ".": "./lib/index.js",
     "./delegate-skill": "./lib/skill-delegation.js",
+    "./delegation-service": "./lib/delegation-service.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },
@@ -40,7 +41,7 @@
   ],
   "scripts": {
     "check": "node scripts/check.mjs",
-    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs && node scripts/test-preset-sync.mjs && node scripts/test-delegation-contract.mjs"
+    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs && node scripts/test-preset-sync.mjs && node scripts/test-delegation-contract.mjs && node scripts/test-delegation-service.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cosmokit": ">=1.8.4 <2.0.0",

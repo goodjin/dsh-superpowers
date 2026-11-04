@@ -1,11 +1,12 @@
 # Host-plane bundle for the Superpowers SDD preset.
 #
-# Three rows live here rather than in the agent preset: the settings namespace
-# has to exist whether or not a superpowers session is running, and the client
-# half is a roster entry the modules node half scans into window.__DSH_BOOT__.
+# Four rows live here rather than in the agent preset: the settings namespace
+# and the delegation service have to exist whether or not a superpowers session
+# is running, and the client half is a roster entry the modules node half scans
+# into window.__DSH_BOOT__.
 #
 # DSH 0.2.x no longer reads ~/.dsh/.agent-presets/<id>/ — a preset is declared
-# by the third row below, whose config carries its id, display text and plugin
+# by the fourth row below, whose config carries its id, display text and plugin
 # list. Installing this bundle is therefore what makes the Superpowers mode
 # appear. The plugin list is the preset's own composition, inlined verbatim.
 #
@@ -16,6 +17,15 @@
 - insert:
     - id: superpowers-delegation-settings
       name: '@goodjin2/dsh-superpowers'
+
+    # The delegation service external agents call through the dsh-acp-agent
+    # bridge (`superpowers.delegation`, shape in lib/delegation-contract.js).
+    # Host-plane on purpose: the bridge row is a host-plane consumer, and a
+    # preset-scoped provide would be invisible to it. This row must NOT join
+    # the preset's plugin list — a preset row publishing into ROOT is exactly
+    # what the host's leak audit rolls the whole preset back for.
+    - id: superpowers-delegation-service
+      name: '@goodjin2/dsh-superpowers/delegation-service'
 
     # The browser half of the same package. A `dsh.client` row is the roster
     # entry the modules node half scans into window.__DSH_BOOT__ and serves at
