@@ -272,21 +272,39 @@
     - id: tool-delegate-skill
       name: '@goodjin2/dsh-superpowers/delegate-skill'
 
-    # `agentOptions` is the DEFAULT route for every child this tool spawns. A
-    # delegation that names provider/model overrides it (that needs the
-    # `subagent-model-selection` settings allowlist); one that names neither
-    # lands here instead of inheriting the parent's route. Set to the session's
-    # current model to keep today's behaviour explicit rather than inherited.
+    # `modelSelectionSettings: true` is deliberately ABSENT. It makes the tool
+    # resolve the Host's `subagentModelSelection` service at mount, and the row
+    # that provides it (`subagent-model-selection-settings`) lives in the
+    # WEB-ONLY section of the `dsh-web-app` bundle — which a Desktop profile
+    # does not install. The tool then throws
+    #   tool-subagent: `modelSelectionSettings` requires
+    #   @deepseek-ai/dsh-tool-subagent/model-selection-settings in the Host scope
+    # and the whole row never mounts.
+    # Verified 2026-10-30 on Desktop 0.2.1-rc.5; the shipped `base` preset omits
+    # this field for the same reason.
+    #
+    # Omitting it costs only the per-call provider/model picker. The child still
+    # inherits the parent's route.
+    #
+    # `agentOptions` is gone for a different reason: the ported row pinned
+    # `minimax-cn / MiniMax-M3.1-Flash-Preview`, a route this profile does not
+    # register, so any dispatch reaching the LLM preflight failed with
+    # `no adapter registered for provider "minimax-cn"`.
+    #
+    # `backgroundMode` is gone too: it is absent from 0.2.1's schema for this
+    # row and was silently discarded. Continuable is already the default.
+    #
+    # NOTE: on THIS machine these two rows never mount regardless of the above.
+    # `@deepseek-ai/dsh-experimental-agent-team-profile` sits later in the
+    # profile's bundle list and its patch sets `disabled: true` on
+    # `tool-subagent` and `tool-subagent-fork`, replacing them with the Team
+    # tools. That is the reason `subagent` reports "unknown tool" here — not
+    # anything in this file.
     - id: tool-subagent
       name: '@deepseek-ai/dsh-tool-subagent'
       config:
         provider: spawn
         toolName: subagent
-        modelSelectionSettings: true
-        backgroundMode: continuable
-        agentOptions:
-          provider: minimax-cn
-          model: MiniMax-M3.1-Flash-Preview
 
     # Fork omits model selection so provider/model stay equal to the parent and
     # the inherited history remains eligible for KV Cache reuse. This preset
@@ -297,7 +315,6 @@
       config:
         provider: fork
         toolName: subagent_fork
-        backgroundMode: continuable
 
     # Production dsh does not install these optional providers. Install the
     # matching Bundle in this Profile and restart the Host, then copy this
@@ -309,7 +326,6 @@
       config:
         provider: codex
         toolName: subagent_codex
-        backgroundMode: one-shot
         maxDepth: provider-managed
 
     - id: tool-subagent-claude-code
@@ -318,7 +334,6 @@
       config:
         provider: claude-code
         toolName: subagent_claude_code
-        backgroundMode: one-shot
         maxDepth: provider-managed
 
     - id: workflow-ptc
