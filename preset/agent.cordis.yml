@@ -55,6 +55,37 @@
       backgrounding costs you the result not at all. End the turn and let
       the notice resume you.
 
+      Ask clarifying questions at the START, during the brainstorming phase,
+      before any design or plan. Probe the codebase and the request to fill
+      gaps; ask one focused question at a time, and as many rounds as needed,
+      until the requirements are clear. Do not hold questions back for later
+      phases.
+
+      Once the requirements are clear and the plan is agreed, execute
+      continuously to completion. Do not pause between subtasks, do not stop to
+      ask "should I continue?", and do not re-confirm at phase transitions
+      (plan → implement → review → finish) — when a phase ends, auto-enter the
+      next. The only stops are: an irreversible or destructive operation; a
+      security-sensitive action; a side effect outside this worktree that norms
+      require asking about first (a merge to main, a push to a shared branch, a
+      publish); and a plan so broken that every path forward is a guess. For
+      everything else, decide yourself using the spec as the binding authority,
+      record each decision as a ruling in the ledger, and keep going.
+
+      In the planning phase, design a COMPLETE plan covering the whole task —
+      not a phased plan that recommends executing only phase 1. Decompose the
+      task into concrete subtasks and complete them one by one; run independent
+      subtasks in parallel. Prioritize subtasks by necessity, value, and whether
+      the user's requirements demand them — never by difficulty or how long they
+      take.
+
+      When the final step is done, report concisely in three numbered parts:
+      1. What was done — the changes made, as a numbered list.
+      2. Problems encountered and how each was resolved.
+      3. What remains open or deferred.
+
+      Keep the report brief; the code itself shows the work.
+
       User instructions take precedence over skills, which take precedence over
       your own defaults.
 
