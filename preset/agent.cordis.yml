@@ -94,6 +94,21 @@
   config:
     maxBytes: 65536
 
+# ── clock ────────────────────────────────────────────────────────────────────
+
+# The model has no clock of its own: `dsh-time-context` appends a durable,
+# source-attributed reading (current time, the request's browser zone, elapsed
+# time since the previous model-visible message) so absolute times resolve in
+# conversation. This preset arms wall-clock schedules through tool-schedule,
+# and "tomorrow at eight" is unanswerable without today's date — without this
+# row the only correct move is a shell call to read the clock first. Every
+# shipped preset declares it (verified 2026-11-05 against the desktop runtime's
+# `preset-standard` and dsh-web-app presets/cordis.patch.yml `preset-cordis`;
+# the dsh-time-context README names standard, cordis, and ptc as its mounters) —
+# this preset was the only one missing it.
+- id: time-context
+  name: '@deepseek-ai/dsh-time-context'
+
 # ── shell ───────────────────────────────────────────────────────────────────
 
 # `shell-env` stays in the HOST composition: `apps/cli/src/web.ts` injects it to
