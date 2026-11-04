@@ -57,5 +57,8 @@
       "platform": "web",
       "immediately": true
     }
+  },
+  "engines": {
+    "dsh": ">=0.2.0-rc.2 <0.3"
   }
 }
