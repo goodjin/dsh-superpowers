@@ -149,6 +149,12 @@
           - id: tool-goal
             name: '@deepseek-ai/dsh-tool-goal'
 
+          # ── schedules ───────────────────────────────────────────────────────────────
+
+          # 权威说明见 preset/agent.cordis.yml 的同名小节；此处与它逐字同步（scripts/test-preset-sync.mjs 看守）。
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
+
           # ── plan mode ───────────────────────────────────────────────────────────────
 
           # Plan state is per-agent by nature, so an entry-local realm is not a

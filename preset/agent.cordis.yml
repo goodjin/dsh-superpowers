@@ -136,6 +136,20 @@
 - id: tool-goal
   name: '@deepseek-ai/dsh-tool-goal'
 
+# ── schedules ───────────────────────────────────────────────────────────────
+
+# schedule_create / list / update / delete act on the calling agent's own
+# session and are served by the host `schedule` service, which the shipped
+# web-app composition mounts (verified 2026-11-05: dsh-web-app/cordis.patch.yml
+# rows `schedule` + `ui-schedule`; the RPC surface exposes list/update/delete/
+# history/catalog but NOT create — creation is agent-tool-only, so a preset
+# that omits this row has no way to arm a schedule at all). Due schedules are
+# delivered as a followup message to the same session (`agent.followup` in
+# dsh-schedule), resuming the session when needed — this is what powers timed
+# recurring prompts (daily/weekly/cron, with an explicit time zone).
+- id: tool-schedule
+  name: '@deepseek-ai/dsh-tool-schedule'
+
 # ── plan mode ───────────────────────────────────────────────────────────────
 
 # Plan state is per-agent by nature, so an entry-local realm is not a

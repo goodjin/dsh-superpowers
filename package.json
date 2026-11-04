@@ -40,7 +40,7 @@
   ],
   "scripts": {
     "check": "node scripts/check.mjs",
-    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs"
+    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs && node scripts/test-preset-sync.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cosmokit": ">=1.8.4 <2.0.0",
