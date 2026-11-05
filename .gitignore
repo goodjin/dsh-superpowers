@@ -1,3 +1,7 @@
 node_modules/
 *.log
 .DS_Store
+
+# 本地工作区与临时备份（不进版本库；曾经被 git add -A 连带提交成 gitlink）
+.worktrees/
+*.bak-*
