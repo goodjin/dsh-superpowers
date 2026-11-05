@@ -117,6 +117,12 @@
             config:
               maxBytes: 65536
 
+          # ── clock ────────────────────────────────────────────────────────────────────
+
+          # 权威说明见 preset/agent.cordis.yml 的同名小节；此处与它逐字同步（scripts/test-preset-sync.mjs 看守）。
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+
           # ── shell ───────────────────────────────────────────────────────────────────
 
           # `shell-env` stays in the HOST composition: `apps/cli/src/web.ts` injects it to
