@@ -181,6 +181,61 @@ await test('钉表命中技能时，agentOptions 就是钉表那一行（provide
   )
 })
 
+await test('孩子显式挂带工具的预置（不是继承父会话的预置组合）', async () => {
+  const { delegate, calls } = await makeService({ settings: pinnedSettings })
+  await delegate({ ...baseRequest })
+  assert(calls.length === 1, `应起一次子代理，实际 ${calls.length}`)
+  // 父会话若是 ACP 预置，继承来的组合里只有绑定行 → 孩子拿到空工具表。
+  // 所以这里必须钉住「孩子自己带预置」，不是「继承」。
+  assert(
+    calls[0].request.agentPreset === 'standard',
+    `孩子应挂 standard 预置，实际 ${JSON.stringify(calls[0].request.agentPreset)}`,
+  )
+})
+
+await test('宿主不支持独立预置选择时退回继承父会话，且只重试一次', async () => {
+  const seen = []
+  const { delegate } = await makeService({
+    settings: pinnedSettings,
+    startActivation: async (spec) => {
+      seen.push(spec.request.agentPreset)
+      if (spec.request.agentPreset !== undefined) {
+        const error = new Error('subagent provider "spawn" does not support independent agent preset selection')
+        error.code = 'UNSUPPORTED_CAPABILITY'
+        throw error
+      }
+      return {
+        childId: 'child-1',
+        result: Promise.resolve({ output: [{ type: 'text', text: '退回继承也跑完了。' }], stopReason: 'completed' }),
+        dispose: async () => {},
+      }
+    },
+  })
+  const result = await delegate({ ...baseRequest })
+  assert(seen.length === 2, `应恰好重试一次，实际调了 ${seen.length} 次：${JSON.stringify(seen)}`)
+  assert(seen[0] === 'standard' && seen[1] === undefined, `重试应去掉 agentPreset，实际 ${JSON.stringify(seen)}`)
+  assert(result.output.includes('退回继承也跑完了。'), `结果应来自重试那次，实际 ${JSON.stringify(result.output)}`)
+})
+
+await test('别的启动失败不重试（可能已经建了半个孩子）', async () => {
+  let attempts = 0
+  const { delegate } = await makeService({
+    settings: pinnedSettings,
+    startActivation: async () => {
+      attempts += 1
+      throw new Error('宿主内部故障：子代理服务未就绪')
+    },
+  })
+  let message = ''
+  try {
+    await delegate({ ...baseRequest })
+  } catch (error) {
+    message = error instanceof Error ? error.message : String(error)
+  }
+  assert(attempts === 1, `非「不支持预置」的失败不该重试，实际尝试 ${attempts} 次`)
+  assert(message.includes('子代理服务未就绪'), `错误应原样冒泡，实际 ${message}`)
+})
+
 await test('钉表未命中该技能、但有默认行时，用默认行', async () => {
   const { delegate, calls } = await makeService({ settings: pinnedSettings })
   await delegate({ ...baseRequest, skill: 'writing-skills' })
