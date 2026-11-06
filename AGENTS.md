@@ -173,6 +173,28 @@ schemastery 版本更老时，插件构造 `Config` 会抛，被 `index.js` 的 
 - 浏览器列不出 provider（那是进程里的单例，没有客户端投影），**得问主机要**。
 - LLM 注册表的服务名有两个可能：`llm` 或 `llmRouter`，**两个都探一下**，别假定一个。
 
+### 起子代理（2026-11-06 对着本机 DSH 0.2.1-rc.5 复核）
+
+- `ctx.subagents` **只有一个启动入口：`startActivation(spec)`**。
+  **没有 `startContinuable`**——这个方法名在整份 DSH 里一处都搜不到，
+  照着旧文档写就会在每一次派发时抛
+  `ctx.subagents.startContinuable is not a function`（2026-11-06 实测，
+  `delegate_skill` 因此整条路全废，而界面不报任何错）。
+- `spec` 的形状由宿主定死（`SubagentActivationSpec`）：
+  `provider` / `label` / `signal` / `delivery` 在 **spec 上**，
+  孩子自己的字段在 **`request` 里**（`SubagentStartRequest`：
+  `prompt` / `parent` / `agentOptions` / `agentPreset` / `cwd` / `maxDepth`）。
+  **`signal` 放 request 里会被忽略**，必须放 spec 上。
+- `delivery` 只有两个值：`'parent'`（后台派发，宿主在孩子结束时通知本会话）
+  和 `'caller'`（调用方自己等 `result`）。要「立刻返回 childId、结束时会通知我」
+  就是 `'parent'`。
+- **`request` 里没有 `persona` 这个字段，宿主会静默丢掉它。**
+  人设属于预置组合（`dsh-persona` 那一行）或写进提示词；
+  本插件选择写进提示词——因为孩子会继承父会话预置的人设（那段话教它
+  「先问清问题」），不塞进提示词就压不住。
+- 拿孩子 id 用返回值上的 `childId`；`result` / `dispose` 只在 `delivery: 'caller'`
+  且调用方要等结果时才碰。
+
 ## 这个插件自己的四条约定
 
 1. **官方包都把 DSH 内部包声明成对等依赖，不是普通依赖。** 照做。声明成普通依赖会在用户目录里

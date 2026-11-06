@@ -71,8 +71,14 @@ async function rejectsWith(promise, pattern, message) {
  * the editor (DSH 0.2.x removed `settings.get()`). A stub without `get` failed
  * the two happy-path tests with `ctx.get is not a function` instead of testing
  * the delegation it exists to test — verified 2026-10-16.
+ *
+ * `subagents` carries ONLY `startActivation` — the host's one child-starting
+ * entry point (verified 2026-11-06 against the shipped DSH 0.2.1-rc.5, whose
+ * `SubagentRuntime` exposes `startActivation` and no `startContinuable`).
+ * Stubbing the old name here would have hidden the exact break that made every
+ * dispatch fail with "ctx.subagents.startContinuable is not a function".
  */
-function captureCtx({ settings = {}, startContinuable } = {}) {
+function captureCtx({ settings = {}, startActivation } = {}) {
   const registered = []
   return {
     registered,
@@ -96,8 +102,8 @@ function captureCtx({ settings = {}, startContinuable } = {}) {
         get: () => settings,
       },
       subagents: {
-        startContinuable:
-          startContinuable ?? (async () => ({ childId: 'child-stub' })),
+        startActivation:
+          startActivation ?? (async () => ({ childId: 'child-stub' })),
       },
     },
   }
@@ -244,8 +250,8 @@ if (depsPresent) {
     }
     const { registered, ctx } = captureCtx({
       settings,
-      startContinuable: async (request) => {
-        calls.push(request)
+      startActivation: async (spec) => {
+        calls.push(spec)
         return { childId: 'child-1' }
       },
     })
@@ -266,6 +272,49 @@ if (depsPresent) {
     assert(allRoutes()['child-1']?.model === 'm1', '台账应记下子代理的实际路由')
   })
 
+  await test('派发走宿主唯一的启动入口 startActivation，规格形状对得上', async () => {
+    const calls = []
+    const settings = { defaultProvider: 'p0', defaultModel: 'm0' }
+    const { registered, ctx } = captureCtx({
+      settings,
+      startActivation: async (spec) => {
+        calls.push(spec)
+        return { childId: 'child-spec' }
+      },
+    })
+    mod.apply(ctx, {})
+    // `skill` omitted entirely — that is the "其他子代理" row. Passing an
+    // explicit null fails the tool's own argument validation (skill is typed
+    // as a string), which is why the row is reached by omission.
+    await registered[0].execute(
+      { task: '标签', brief: '简报' },
+      { agent: { id: 'parent' }, signal: new AbortController().signal },
+    )
+    assert(calls.length === 1, '应派发一次子代理')
+    const spec = calls[0]
+    // The host's SubagentActivationSpec (verified 2026-11-06 against the
+    // shipped DSH 0.2.1-rc.5): provider / label / signal / delivery live on
+    // the SPEC; the request carries the child's own fields.
+    assert(spec.provider === 'spawn', `provider 应为 spawn，实际 ${spec.provider}`)
+    assert(spec.label === '[通用] 标签', `label 应为 [通用] 标签，实际 ${spec.label}`)
+    assert(spec.signal instanceof AbortSignal, 'signal 应是 AbortSignal')
+    assert(spec.delivery === 'parent', `delivery 应为 parent，实际 ${spec.delivery}`)
+    assert(Array.isArray(spec.request.prompt) && spec.request.prompt.length === 1, 'prompt 应是内容块数组')
+    assert(spec.request.parent?.id === 'parent', 'request 应带上调用方的 agent')
+    // `persona` is NOT a request field on this host — it is dropped silently —
+    // so the persona has to ride in the prompt instead.
+    assert(spec.request.persona === undefined, 'request 里不该再放 persona（宿主会静默丢掉）')
+    const { DEFAULT_PERSONA } = await import(pathToFileURL(join(dirname(target), 'skill-delegation.js')).href)
+    assert(
+      spec.request.prompt[0].text.startsWith(DEFAULT_PERSONA),
+      '人设应作为提示词的一部分送到孩子手里',
+    )
+    assert(
+      spec.request.prompt[0].text.endsWith('简报'),
+      '任务书原文应接在人设之后',
+    )
+  })
+
   await test('有默认路由时，复用主会话哨兵仍不传 agentOptions', async () => {
     const { ROUTE_USE_PARENT_SESSION } = await import(pathToFileURL(join(dirname(target), 'delegable-skills.js')).href)
     const calls = []
@@ -278,8 +327,8 @@ if (depsPresent) {
     }
     const { registered, ctx } = captureCtx({
       settings,
-      startContinuable: async (request) => {
-        calls.push(request)
+      startActivation: async (spec) => {
+        calls.push(spec)
         return { childId: 'child-parent' }
       },
     })
