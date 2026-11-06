@@ -272,9 +272,13 @@
   config:
     - id: tool-subagent-control
       name: '@deepseek-ai/dsh-tool-subagent-control'
-
-    - id: tool-subagent-list-agents
-      name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
+      # `list_agents` rides INSIDE this row since dsh 0.2.2: the
+      # `@deepseek-ai/dsh-tool-subagent-control/list-agents` subpath export is
+      # gone. Do NOT mount that old subpath as its own row — the import fails,
+      # the row never starts, and because a preset mounts as ONE transaction
+      # every session create then fails with `agent-preset/invalid`:
+      #   tool-subagent-list-agents (.../list-agents): never started
+      # (2026-11-06, 桌面版 dsh 0.2.2-rc.1 实测。)
 
     # Delegation whose MODEL is pinned by the `superpowers-delegation` settings
     # table instead of chosen by the caller. It reads the namespace directly,

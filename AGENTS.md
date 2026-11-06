@@ -119,6 +119,12 @@ schemastery 版本更老时，插件构造 `Config` 会抛，被 `index.js` 的 
 - 预设行引用插件自己的模块时，**用包引用（`@goodjin2/dsh-superpowers/delegate-skill`，
   `package.json` 的 exports 里有映射），不要用文件绝对路径**——路径指到哪，就按哪里的
   node_modules 解析对等依赖。
+- **宿主会删子路径导出（2026-11-06 实测）**：`@deepseek-ai/dsh-tool-subagent-control`
+  在 dsh **0.2.2-rc.1** 把 `list_agents` 并进了主插件，`./list-agents` 子路径导出**没了**，
+  官方 standard 预置也不再单挂那一行。本仓跟着删掉后，桌面版（0.2.2-rc.1）升上来那次
+  「所有目录都建不了会话、红字 `agent-preset/invalid`」才消失——报错原文是
+  `tool-subagent-list-agents (.../list-agents): never started`，看着像偶发，其实是一行坏掉
+  导致的整树回滚。**DSH 升版本后，先用新版安装目录当基准把预设逐行解析一遍，再开界面。**
 
 ### 浏览器侧
 
