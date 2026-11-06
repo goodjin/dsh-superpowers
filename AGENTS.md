@@ -73,6 +73,11 @@ token 在你打开 DSH 的那个地址里，**每次重启都会换**。这个�
 （默认查 profile 里装好的那份；第四参数可指定别的副本，比如开发仓库的 `preset/agent.cordis.yml`）。
 挂载风暴就是这一行引起的——这条检查不用开 inspector 就能发现。
 
+**声明行过期（宿主删包 / 删子路径导出 / 改 config schema）不归 `check.mjs` 管**，那是
+容器里的跨插件检查：`node /Users/good/github/dsh-plugins/scripts/check-host-rows.mjs dsh-superpowers`。
+DSH 一升级就跑，**每个宿主版本各跑一遍**（桌面版和 CLI 经常不同版本）。2026-11-06 那次
+「所有目录建不了会话」就是它该拦住的。
+
 **改浏览器侧时，先起一个临时端口验，别直接动正在用的那个。**
 把 token 抄下来会把它暴露在别处，起新实例反而更安全。
 
