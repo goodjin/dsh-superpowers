@@ -243,6 +243,17 @@
     - id: compaction-basic
       name: '@deepseek-ai/dsh-compaction-basic'
 
+    # Host compaction rejects a whole model switch when the pre-switch summary
+    # fails (e.g. the summary route's quota is exhausted). This row wraps that
+    # hook: warn, show a visible notice, and let the switch proceed. It lives
+    # inside the compaction group's realm and waits on the `compaction` service
+    # so its prepend hook registers AFTER the host's (outermost = registered
+    # last). Declaration order alone is not enough: the loader starts rows
+    # concurrently.
+    - id: superpowers-model-switch-guard
+      name: '@goodjin2/dsh-superpowers/model-switch-guard'
+      inject: ['compaction']
+
     - id: command-compact
       name: '@deepseek-ai/dsh-command-compact'
 

@@ -26,6 +26,7 @@
     ".": "./lib/index.js",
     "./delegate-skill": "./lib/skill-delegation.js",
     "./delegation-service": "./lib/delegation-service.js",
+    "./model-switch-guard": "./lib/model-switch-guard.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },
@@ -41,7 +42,7 @@
   ],
   "scripts": {
     "check": "node scripts/check.mjs",
-    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs && node scripts/test-preset-sync.mjs && node scripts/test-delegation-contract.mjs && node scripts/test-delegation-service.mjs"
+    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs && node scripts/test-preset-sync.mjs && node scripts/test-delegation-contract.mjs && node scripts/test-delegation-service.mjs && node scripts/test-model-switch-guard.mjs && node scripts/test-model-switch-guard-runtime.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cosmokit": ">=1.8.4 <2.0.0",
