@@ -100,7 +100,7 @@ await test('inject 声明覆盖模型目录的两个 remote 面', () => {
 })
 
 await test('显示名代码路径齐备（下拉 + 子代理标签）', () => {
-  for (const needle of ['loadModelNames', 'readProjectedRoute', 'providerName ?? option.provider', 'found?.modelName ?? route.model']) {
+  for (const needle of ['loadModelNames', 'readProjectedRoute', 'providerName ?? option.provider', 'found.providerName} · ${found.modelName}']) {
     assert(source.includes(needle), `client.js 缺关键片段：${needle}`)
   }
   const hostSource = readFileSync(join(here, '..', 'lib', 'index.js'), 'utf8')
