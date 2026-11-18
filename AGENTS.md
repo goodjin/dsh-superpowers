@@ -149,6 +149,10 @@ schemastery 版本更老时，插件构造 `Config` 会抛，被 `index.js` 的 
 - 插槽分两种：`kind: "list"`（设置分区、输入框左右、侧栏列表）和 `kind: "single"`（设置项、模型位）。
 - **插槽的 `inject` 必须是一个函数**（按上下文算出要传的东西），传数组会静默不工作。
 - `conversation.input.left` 是**按空属性渲染**的：拿不到会话 id，得靠插槽自己的 `inject` 传进来。
+- **`slots.inject(...)` 的调用本身在降级渲染器里就会抛**（它是声明服务的一个方法，
+  2026-11-18 实测：容器预检故障注入下，不带护栏的 apply 直接穿透）。所以每个插槽
+  注册要**各包一层 try/catch**——一处坏只丢一块，别两块一起没。本插件的
+  `check-client-activation.mjs` 自 2026-11-18 起为绿（此前一直是红的）。
 
 ### 浏览器问主机
 
@@ -178,6 +182,23 @@ schemastery 版本更老时，插件构造 `Config` 会抛，被 `index.js` 的 
   不是因为模型没传下来。
 - 投影值的形状是 **`{next: {provider, model}}`**，模型在 `next` 里面。
   **读最外层的 `model` 永远是空的。**（这个也踩过。）
+- 投影里存的是**线路 id**（如 `MiniMax-M3.1-Flash-Preview`），**不是显示名**。
+  显示名要另查（2026-11-18 对着桌面版安装目录里的 dsh-llm 与
+  dsh-client-ui-model-selection 源码核对）：`listModels` 返回
+  `{provider, id, name}`，`id` 是线路 id、`name` 是显示名，两者都必须非空。
+
+### 模型显示名（2026-11-18 核对）
+
+- 浏览器侧查显示名的口子是**模型目录**：`ctx.remote.session.modelCatalog()`
+  （client 模块的 inject 里声明 `remote` 与 `remote.session` 两个面）。
+  返回 `{ok, value: {groups: [{id, name, models: [{id, name, …}]}]}}`，
+  `group.id` 是 provider id、`group.name` 是 provider 显示名、
+  `model.id` 是线路 id、`model.name` 是显示名——官方模型选择器/options 的
+  文案就出自这里。
+- 主机侧同样的信息走 `llm`（或 `llmRouter`）注册表的 `listProviders()` /
+  `listModels(providerId)`，条目形状同上。
+- 两条路都可能拿不到（旧版宿主没有这个面、目录加载失败）：**拿不到就回退
+  显示线路 id**，别让标签消失或报错——降级语义是「退回旧样子」，不是「没了」。
 
 ### 取模型下拉
 

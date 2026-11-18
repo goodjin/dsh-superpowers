@@ -42,7 +42,7 @@
   ],
   "scripts": {
     "check": "node scripts/check.mjs",
-    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs && node scripts/test-preset-sync.mjs && node scripts/test-delegation-contract.mjs && node scripts/test-delegation-service.mjs && node scripts/test-model-switch-guard.mjs && node scripts/test-model-switch-guard-runtime.mjs"
+    "test": "node scripts/test.mjs && node scripts/test-optional-deps.mjs && node scripts/test-preset-sync.mjs && node scripts/test-delegation-contract.mjs && node scripts/test-delegation-service.mjs && node scripts/test-model-switch-guard.mjs && node scripts/test-model-switch-guard-runtime.mjs && node scripts/test-model-display.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cosmokit": ">=1.8.4 <2.0.0",

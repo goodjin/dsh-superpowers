@@ -164,7 +164,7 @@ async function bundle(port) {
     const res = await fetch(`http://127.0.0.1:${port}${path}`)
     if (!res.ok) return { present: false, detail: `浏览器文件取不到（HTTP ${res.status}）` }
     const source = await res.text()
-    const missing = ['settings.section', 'conversation.input.left', 'readProjectedModel', 'ensureStyles'].filter(
+    const missing = ['settings.section', 'conversation.input.left', 'readProjectedRoute', 'loadModelNames', 'ensureStyles'].filter(
       (needle) => !source.includes(needle),
     )
     if (missing.length > 0) return { present: false, detail: `浏览器文件缺这些关键部分：${missing.join('、')}` }
